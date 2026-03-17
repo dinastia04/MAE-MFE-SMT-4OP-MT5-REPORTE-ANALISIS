@@ -1,0 +1,5 @@
+{
+  "name": "NDX Analyzer",
+  "description": "Análisis completo por modelo para operaciones NDX con cálculos de MAE/MFE y simulaciones.",
+  "requestFramePermissions": []
+}
