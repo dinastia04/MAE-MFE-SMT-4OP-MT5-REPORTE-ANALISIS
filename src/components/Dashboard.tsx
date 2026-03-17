@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ModelCard } from './ModelCard';
+import { Glossary } from './Glossary';
 import { parseOperations, parseHistory } from '../lib/parser';
 import { analyzeOperations } from '../lib/analyzer';
 import { generateExcel } from '../lib/excel';
@@ -222,6 +223,8 @@ export function Dashboard() {
             </div>
           </div>
         )}
+
+        <Glossary />
       </div>
     </div>
   );
