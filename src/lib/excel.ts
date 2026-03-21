@@ -1,7 +1,7 @@
 import ExcelJS from 'exceljs';
-import { ModelAnalysis } from '../types';
+import { ModelAnalysis, TradeResult } from '../types';
 
-export async function generateExcel(models: ModelAnalysis[]) {
+export async function generateExcel(models: ModelAnalysis[], results: TradeResult[]) {
   const wb = new ExcelJS.Workbook();
 
   const titleFont = { name: 'Calibri', size: 16, bold: true };
@@ -16,7 +16,7 @@ export async function generateExcel(models: ModelAnalysis[]) {
   wsRes.getCell('B2').value = 'RESUMEN COMPARATIVO POR MODELO - NDX';
   wsRes.getCell('B2').font = titleFont;
 
-  const headers = ['Modelo', 'Ops', 'Win Rate', 'PNL Total', 'PNL Neto', 'MAE Prom ($)', 'MFE Prom ($)', 'Ratio', 'Mejor Min', 'Mejor SL', 'Mejor BE'];
+  const headers = ['Modelo', 'Ops', 'Win Rate', 'PNL Total', 'PNL Neto', 'PNL EMA 100', 'PNL EMA 200', 'MAE Prom ($)', 'MFE Prom ($)', 'Ratio', 'Mejor Min', 'Mejor SL', 'Mejor BE'];
   let row = 4;
 
   headers.forEach((h, i) => {
@@ -43,6 +43,8 @@ export async function generateExcel(models: ModelAnalysis[]) {
       `${a.winRate.toFixed(1)}%`,
       `$${a.pnlTotal.toFixed(2)}`,
       `$${a.pnlNeto.toFixed(2)}`,
+      `$${a.pnlEma100.toFixed(2)}`,
+      `$${a.pnlEma200.toFixed(2)}`,
       `$${a.maeProm.toFixed(2)}`,
       `$${a.mfeProm.toFixed(2)}`,
       a.ratio.toFixed(2),
@@ -82,6 +84,8 @@ export async function generateExcel(models: ModelAnalysis[]) {
       ['PNL Total', `$${a.pnlTotal.toFixed(2)}`],
       ['Comisiones', `$${a.comisiones.toFixed(2)}`],
       ['PNL Neto', `$${a.pnlNeto.toFixed(2)}`],
+      ['PNL EMA 100', `$${a.pnlEma100.toFixed(2)}`],
+      ['PNL EMA 200', `$${a.pnlEma200.toFixed(2)}`],
     ];
 
     resumen.forEach(([label, val]) => {
@@ -248,6 +252,73 @@ export async function generateExcel(models: ModelAnalysis[]) {
     ws.getColumn(4).width = 14;
     ws.getColumn(5).width = 12;
     ws.getColumn(6).width = 12;
+
+    // --- HOJA DE OPERACIONES INDIVIDUALES ---
+    const wsOps = wb.addWorksheet(`${a.modelo.substring(0, 25)} Ops`);
+    
+    const opsHeaders = [
+      'ID', 'Symbol', 'Type', 'Activation Time', 'Close Time', 'Volume', 'Entry Price', 'SL', 'TP', 'Commission', 'PNL', 'Duration (Min)', 'Comment',
+      'MAE (Pts)', 'MFE (Pts)', 'MAE ($)', 'MFE ($)', 'PNL BE 25%', 'PNL BE 30%', 'PNL BE 50%', 'PNL BE 75%'
+    ];
+    
+    // Aesthetic colors for new columns
+    const newColHeaderFill: ExcelJS.Fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF8E44AD' } }; // Purple
+    const newColFill: ExcelJS.Fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF4ECF7' } }; // Light purple
+    
+    // Set headers
+    opsHeaders.forEach((h, i) => {
+      const cell = wsOps.getCell(1, i + 1);
+      cell.value = h;
+      cell.font = headerFont;
+      if (i >= 13) {
+        cell.fill = newColHeaderFill;
+      } else {
+        cell.fill = headerFill;
+      }
+    });
+    
+    const modelOps = results.filter(r => r.model === a.modelo);
+    
+    modelOps.forEach((op, index) => {
+      const rowOps = index + 2;
+      
+      const pnlBE25 = op.mfePts >= (op.tpDist * 0.25) ? (op.pnl < 0 ? 0 : op.pnl) : op.pnl;
+      const pnlBE30 = op.mfePts >= (op.tpDist * 0.30) ? (op.pnl < 0 ? 0 : op.pnl) : op.pnl;
+      const pnlBE50 = op.mfePts >= (op.tpDist * 0.50) ? (op.pnl < 0 ? 0 : op.pnl) : op.pnl;
+      const pnlBE75 = op.mfePts >= (op.tpDist * 0.75) ? (op.pnl < 0 ? 0 : op.pnl) : op.pnl;
+      
+      const rowData = [
+        op.id, op.symbol, op.type.toUpperCase(), op.activationTime, op.closeTime, op.volume, op.entryPrice, op.sl, op.tp, op.commission, op.pnl, op.durationMin, op.comment,
+        op.maePts, op.mfePts, op.maeDollars, op.mfeDollars, pnlBE25, pnlBE30, pnlBE50, pnlBE75
+      ];
+      
+      rowData.forEach((val, i) => {
+        const cell = wsOps.getCell(rowOps, i + 1);
+        cell.value = val;
+        if (i >= 13) {
+          cell.fill = newColFill;
+        }
+        // Format dates
+        if (val instanceof Date) {
+          cell.numFmt = 'yyyy-mm-dd hh:mm:ss';
+        }
+        // Format currency/numbers
+        if (typeof val === 'number') {
+          if (i === 5) cell.numFmt = '0.00'; // Volume
+          else if (i >= 6 && i <= 8) cell.numFmt = '0.00'; // Prices
+          else if (i === 11) cell.numFmt = '0.0'; // Duration
+          else if (i === 13 || i === 14) cell.numFmt = '0.00'; // MAE/MFE Pts
+          else if (i === 9 || i === 10 || i >= 15) cell.numFmt = '"$"#,##0.00'; // PNL, Commission, MAE/MFE $, BE $
+        }
+      });
+    });
+    
+    // Auto-fit columns roughly
+    wsOps.columns.forEach((col, i) => {
+      if (i === 3 || i === 4) col.width = 20; // Dates
+      else if (i === 12) col.width = 30; // Comment
+      else col.width = 15;
+    });
   });
 
   const buffer = await wb.xlsx.writeBuffer();
@@ -255,7 +326,11 @@ export async function generateExcel(models: ModelAnalysis[]) {
   const url = window.URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'Analisis_NDX_Por_Modelo_Completo.xlsx';
+  
+  const date = new Date();
+  const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  a.download = `[MAE MFE] [NDX] ${formattedDate}.xlsx`;
+  
   a.click();
   window.URL.revokeObjectURL(url);
 }

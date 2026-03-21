@@ -4,7 +4,7 @@ import { Glossary } from './Glossary';
 import { parseOperations, parseHistory } from '../lib/parser';
 import { analyzeOperations } from '../lib/analyzer';
 import { generateExcel } from '../lib/excel';
-import { ModelAnalysis } from '../types';
+import { ModelAnalysis, TradeResult } from '../types';
 import { Download, Loader2, BarChart3, UploadCloud, FileCheck, FileWarning } from 'lucide-react';
 
 const identifyFile = async (file: File): Promise<'ops' | 'hist' | 'unknown'> => {
@@ -31,6 +31,7 @@ export function Dashboard() {
   const [histFile, setHistFile] = useState<File | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [models, setModels] = useState<ModelAnalysis[]>([]);
+  const [results, setResults] = useState<TradeResult[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -49,8 +50,9 @@ export function Dashboard() {
         throw new Error('No se encontraron datos históricos válidos.');
       }
 
-      const { models: analyzedModels } = analyzeOperations(parsedOps, parsedHist);
+      const { results: analyzedResults, models: analyzedModels } = analyzeOperations(parsedOps, parsedHist);
       setModels(analyzedModels);
+      setResults(analyzedResults);
     } catch (err: any) {
       setError(err.message || 'Ocurrió un error durante el análisis.');
       // Reset files on error to allow re-uploading
@@ -112,7 +114,7 @@ export function Dashboard() {
   const handleExport = async () => {
     if (models.length === 0) return;
     try {
-      await generateExcel(models);
+      await generateExcel(models, results);
     } catch (err: any) {
       setError('Error al generar el Excel: ' + (err.message || ''));
     }
@@ -122,6 +124,7 @@ export function Dashboard() {
     setOpsFile(null);
     setHistFile(null);
     setModels([]);
+    setResults([]);
     setError(null);
   };
 
@@ -205,6 +208,24 @@ export function Dashboard() {
 
         {models.length > 0 && (
           <div className="space-y-8">
+            <div className="flex flex-col sm:flex-row gap-4 p-4 bg-zinc-900/50 border border-zinc-800 rounded-xl">
+              <div className="flex items-center gap-3">
+                <FileCheck className="w-5 h-5 text-emerald-500" />
+                <div className="flex flex-col">
+                  <span className="text-xs text-zinc-500 font-medium uppercase tracking-wider">Operaciones (MT5)</span>
+                  <span className="text-sm text-emerald-400 truncate max-w-[200px] sm:max-w-xs">{opsFile?.name}</span>
+                </div>
+              </div>
+              <div className="hidden sm:block w-px bg-zinc-800"></div>
+              <div className="flex items-center gap-3">
+                <FileCheck className="w-5 h-5 text-emerald-500" />
+                <div className="flex flex-col">
+                  <span className="text-xs text-zinc-500 font-medium uppercase tracking-wider">Datos Históricos (M5)</span>
+                  <span className="text-sm text-emerald-400 truncate max-w-[200px] sm:max-w-xs">{histFile?.name}</span>
+                </div>
+              </div>
+            </div>
+
             <section className="flex items-center justify-between border-b border-zinc-800 pb-6">
               <h2 className="text-2xl font-semibold tracking-tight">Resultados por Modelo</h2>
               <button

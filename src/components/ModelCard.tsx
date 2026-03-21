@@ -34,6 +34,18 @@ export function ModelCard({ model }: ModelCardProps) {
           </p>
         </div>
         <div className="space-y-1">
+          <p className="text-xs text-zinc-500 uppercase tracking-wider">PNL EMA 100</p>
+          <p className={`text-lg font-medium ${model.pnlEma100 >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+            ${model.pnlEma100.toFixed(2)}
+          </p>
+        </div>
+        <div className="space-y-1">
+          <p className="text-xs text-zinc-500 uppercase tracking-wider">PNL EMA 200</p>
+          <p className={`text-lg font-medium ${model.pnlEma200 >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+            ${model.pnlEma200.toFixed(2)}
+          </p>
+        </div>
+        <div className="space-y-1">
           <p className="text-xs text-zinc-500 uppercase tracking-wider">MAE Prom</p>
           <p className="text-lg font-medium text-red-400">${model.maeProm.toFixed(2)}</p>
         </div>

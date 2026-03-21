@@ -106,6 +106,26 @@ export function parseHistory(file: File): Promise<Candle[]> {
         
         // Sort by datetime
         candles.sort((a, b) => a.datetime.getTime() - b.datetime.getTime());
+
+        // Calculate EMAs
+        let ema100 = 0;
+        let ema200 = 0;
+        const k100 = 2 / (100 + 1);
+        const k200 = 2 / (200 + 1);
+
+        for (let i = 0; i < candles.length; i++) {
+          const close = candles[i].close;
+          if (i === 0) {
+            ema100 = close;
+            ema200 = close;
+          } else {
+            ema100 = (close - ema100) * k100 + ema100;
+            ema200 = (close - ema200) * k200 + ema200;
+          }
+          candles[i].ema100 = ema100;
+          candles[i].ema200 = ema200;
+        }
+
         resolve(candles);
       } catch (err) {
         reject(err);

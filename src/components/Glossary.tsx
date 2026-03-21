@@ -20,6 +20,14 @@ export function Glossary() {
       definition: 'Tu ganancia o pérdida real después de restar las comisiones del broker.'
     },
     {
+      term: 'PNL EMA 100',
+      definition: 'El PNL (ganancia/pérdida) de las operaciones que se tomaron a favor de la tendencia según la Media Móvil Exponencial (EMA) de 100 periodos. Se calcula usando la EMA de la vela anterior a la entrada para ser justo.'
+    },
+    {
+      term: 'PNL EMA 200',
+      definition: 'El PNL de las operaciones que se tomaron a favor de la tendencia según la EMA de 200 periodos. Te ayuda a saber si operar solo a favor de la tendencia a largo plazo mejora tus resultados.'
+    },
+    {
       term: 'Ratio MFE/MAE',
       definition: 'Compara cuánto ganas cuando el precio va a tu favor vs cuánto arriesgas cuando va en contra. Un ratio mayor a 1 significa que tus movimientos a favor son más grandes que los que van en contra.'
     },

@@ -24,6 +24,11 @@ export function analyzeOperations(ops: Operation[], history: Candle[]): { result
     let current = roundToM5(op.activationTime);
     const end = new Date(roundToM5(op.closeTime).getTime() + 5 * 60000);
 
+    const prevCandleTime = current.getTime() - 5 * 60000;
+    const prevCandle = histDict.get(prevCandleTime);
+    const ema100 = prevCandle?.ema100;
+    const ema200 = prevCandle?.ema200;
+
     while (current <= end) {
       const candle = histDict.get(current.getTime());
       if (candle) {
@@ -70,6 +75,12 @@ export function analyzeOperations(ops: Operation[], history: Candle[]): { result
 
     results.push({
       id: op.id,
+      symbol: op.symbol,
+      activationTime: op.activationTime,
+      closeTime: op.closeTime,
+      comment: op.comment,
+      sl: op.sl,
+      tp: op.tp,
       model: op.model,
       type: op.type,
       volume: op.volume,
@@ -84,6 +95,8 @@ export function analyzeOperations(ops: Operation[], history: Candle[]): { result
       durationMin: op.durationSec / 60,
       journey,
       entryPrice: op.entryPrice,
+      ema100,
+      ema200,
     });
   }
 
@@ -110,6 +123,22 @@ function analyzeModel(modelOps: TradeResult[], modelName: string): ModelAnalysis
   const pnlProm = pnlTotal / total;
   const comisiones = modelOps.reduce((sum, o) => sum + o.commission, 0);
   const pnlNeto = pnlTotal - comisiones;
+
+  let pnlEma100 = 0;
+  let pnlEma200 = 0;
+
+  modelOps.forEach((o) => {
+    if (o.ema100 !== undefined) {
+      if ((o.type === 'buy' && o.entryPrice > o.ema100) || (o.type === 'sell' && o.entryPrice < o.ema100)) {
+        pnlEma100 += o.pnl;
+      }
+    }
+    if (o.ema200 !== undefined) {
+      if ((o.type === 'buy' && o.entryPrice > o.ema200) || (o.type === 'sell' && o.entryPrice < o.ema200)) {
+        pnlEma200 += o.pnl;
+      }
+    }
+  });
 
   const maeProm = modelOps.reduce((sum, o) => sum + o.maeDollars, 0) / total;
   const sortedMae = [...modelOps].map(o => o.maeDollars).sort((a, b) => a - b);
@@ -326,6 +355,8 @@ function analyzeModel(modelOps: TradeResult[], modelName: string): ModelAnalysis
     slLevels,
     halfPnl,
     halfDiff,
+    pnlEma100,
+    pnlEma200,
     clasif,
   };
 }

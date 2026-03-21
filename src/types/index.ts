@@ -21,6 +21,8 @@ export interface Candle {
   high: number;
   low: number;
   close: number;
+  ema100?: number;
+  ema200?: number;
 }
 
 export interface JourneyPoint {
@@ -32,6 +34,12 @@ export interface JourneyPoint {
 
 export interface TradeResult {
   id: string;
+  symbol: string;
+  activationTime: Date;
+  closeTime: Date;
+  comment: string;
+  sl: number;
+  tp: number;
   model: string;
   type: 'buy' | 'sell';
   volume: number;
@@ -46,6 +54,8 @@ export interface TradeResult {
   durationMin: number;
   journey: JourneyPoint[];
   entryPrice: number;
+  ema100?: number;
+  ema200?: number;
 }
 
 export interface ModelAnalysis {
@@ -78,6 +88,8 @@ export interface ModelAnalysis {
   slLevels: { nivel: string; alcanzaron: number; llegaronTp: number; hitSl: number; successRate: number }[];
   halfPnl: number;
   halfDiff: number;
+  pnlEma100: number;
+  pnlEma200: number;
   clasif: {
     BIEN: { count: number; pnlProm: number };
     NEUTRAL: { count: number; pnlProm: number };
