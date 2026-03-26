@@ -107,23 +107,64 @@ export function parseHistory(file: File): Promise<Candle[]> {
         // Sort by datetime
         candles.sort((a, b) => a.datetime.getTime() - b.datetime.getTime());
 
-        // Calculate EMAs
+        // Calculate EMAs, RSI, and MACD
         let ema100 = 0;
         let ema200 = 0;
+        let ema12 = 0;
+        let ema26 = 0;
         const k100 = 2 / (100 + 1);
         const k200 = 2 / (200 + 1);
+        const k12 = 2 / (12 + 1);
+        const k26 = 2 / (26 + 1);
+
+        let avgGain = 0;
+        let avgLoss = 0;
 
         for (let i = 0; i < candles.length; i++) {
           const close = candles[i].close;
+          
+          // EMAs and MACD
           if (i === 0) {
             ema100 = close;
             ema200 = close;
+            ema12 = close;
+            ema26 = close;
           } else {
             ema100 = (close - ema100) * k100 + ema100;
             ema200 = (close - ema200) * k200 + ema200;
+            ema12 = (close - ema12) * k12 + ema12;
+            ema26 = (close - ema26) * k26 + ema26;
           }
           candles[i].ema100 = ema100;
           candles[i].ema200 = ema200;
+          candles[i].macd = ema12 - ema26;
+
+          // EMA Trends (based on 50 periods ago)
+          if (i >= 50) {
+            candles[i].ema100Trend = ema100 > candles[i - 50].ema100! ? 'ALCISTA' : 'BAJISTA';
+            candles[i].ema200Trend = ema200 > candles[i - 50].ema200! ? 'ALCISTA' : 'BAJISTA';
+          }
+
+          // RSI
+          if (i > 0) {
+            const change = close - candles[i - 1].close;
+            const gain = change > 0 ? change : 0;
+            const loss = change < 0 ? -change : 0;
+
+            if (i <= 14) {
+              avgGain += gain / 14;
+              avgLoss += loss / 14;
+              if (i === 14) {
+                const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
+                candles[i].rsi = avgLoss === 0 ? 100 : 100 - (100 / (1 + rs));
+              }
+            } else {
+              avgGain = (avgGain * 13 + gain) / 14;
+              avgLoss = (avgLoss * 13 + loss) / 14;
+              const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
+              candles[i].rsi = avgLoss === 0 ? 100 : 100 - (100 / (1 + rs));
+            }
+          }
         }
 
         resolve(candles);

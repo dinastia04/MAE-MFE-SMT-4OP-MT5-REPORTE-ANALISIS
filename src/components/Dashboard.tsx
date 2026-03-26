@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ModelCard } from './ModelCard';
 import { Glossary } from './Glossary';
+import { FiltersView } from './filters/FiltersView';
 import { parseOperations, parseHistory } from '../lib/parser';
 import { analyzeOperations } from '../lib/analyzer';
 import { generateExcel } from '../lib/excel';
@@ -34,6 +35,7 @@ export function Dashboard() {
   const [results, setResults] = useState<TradeResult[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [activeTab, setActiveTab] = useState<'main' | 'filters'>('main');
 
   const handleAnalyze = useCallback(async (ops: File, hist: File) => {
     setAnalyzing(true);
@@ -114,7 +116,7 @@ export function Dashboard() {
   const handleExport = async () => {
     if (models.length === 0) return;
     try {
-      await generateExcel(models, results);
+      await generateExcel(models, results, opsFile?.name || 'Desconocido', histFile?.name || 'Desconocido');
     } catch (err: any) {
       setError('Error al generar el Excel: ' + (err.message || ''));
     }
@@ -126,6 +128,7 @@ export function Dashboard() {
     setModels([]);
     setResults([]);
     setError(null);
+    setActiveTab('main');
   };
 
   return (
@@ -226,8 +229,29 @@ export function Dashboard() {
               </div>
             </div>
 
-            <section className="flex items-center justify-between border-b border-zinc-800 pb-6">
-              <h2 className="text-2xl font-semibold tracking-tight">Resultados por Modelo</h2>
+            <section className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-zinc-800 pb-6 gap-4">
+              <div className="flex bg-zinc-900/50 p-1 rounded-xl border border-zinc-800">
+                <button
+                  onClick={() => setActiveTab('main')}
+                  className={`px-6 py-2.5 text-sm font-medium rounded-lg transition-all ${
+                    activeTab === 'main' 
+                      ? 'bg-zinc-800 text-white shadow-md' 
+                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
+                  }`}
+                >
+                  Resultados por Modelo
+                </button>
+                <button
+                  onClick={() => setActiveTab('filters')}
+                  className={`px-6 py-2.5 text-sm font-medium rounded-lg transition-all ${
+                    activeTab === 'filters' 
+                      ? 'bg-zinc-800 text-white shadow-md' 
+                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
+                  }`}
+                >
+                  Filtros Avanzados
+                </button>
+              </div>
               <button
                 onClick={handleExport}
                 className="flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-xl transition-colors shadow-lg shadow-emerald-900/20 cursor-pointer"
@@ -237,15 +261,19 @@ export function Dashboard() {
               </button>
             </section>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {models.map((model) => (
-                <ModelCard key={model.modelo} model={model} />
-              ))}
-            </div>
+            {activeTab === 'main' ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in duration-500">
+                {models.map((model) => (
+                  <ModelCard key={model.modelo} model={model} />
+                ))}
+              </div>
+            ) : (
+              <FiltersView results={results} models={models} />
+            )}
           </div>
         )}
 
-        <Glossary />
+        {models.length > 0 && activeTab === 'main' && <Glossary />}
       </div>
     </div>
   );

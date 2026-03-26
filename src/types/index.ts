@@ -23,6 +23,10 @@ export interface Candle {
   close: number;
   ema100?: number;
   ema200?: number;
+  ema100Trend?: 'ALCISTA' | 'BAJISTA';
+  ema200Trend?: 'ALCISTA' | 'BAJISTA';
+  rsi?: number;
+  macd?: number;
 }
 
 export interface JourneyPoint {
@@ -56,6 +60,10 @@ export interface TradeResult {
   entryPrice: number;
   ema100?: number;
   ema200?: number;
+  ema100Trend?: 'ALCISTA' | 'BAJISTA';
+  ema200Trend?: 'ALCISTA' | 'BAJISTA';
+  rsi?: number;
+  macd?: number;
 }
 
 export interface ModelAnalysis {

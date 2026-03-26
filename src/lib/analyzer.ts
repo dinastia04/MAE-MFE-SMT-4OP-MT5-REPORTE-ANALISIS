@@ -28,6 +28,10 @@ export function analyzeOperations(ops: Operation[], history: Candle[]): { result
     const prevCandle = histDict.get(prevCandleTime);
     const ema100 = prevCandle?.ema100;
     const ema200 = prevCandle?.ema200;
+    const ema100Trend = prevCandle?.ema100Trend;
+    const ema200Trend = prevCandle?.ema200Trend;
+    const rsi = prevCandle?.rsi;
+    const macd = prevCandle?.macd;
 
     while (current <= end) {
       const candle = histDict.get(current.getTime());
@@ -97,6 +101,10 @@ export function analyzeOperations(ops: Operation[], history: Candle[]): { result
       entryPrice: op.entryPrice,
       ema100,
       ema200,
+      ema100Trend,
+      ema200Trend,
+      rsi,
+      macd,
     });
   }
 
